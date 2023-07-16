@@ -24,9 +24,16 @@ ui <- fluidPage(
       actionButton("go", "开始分析")
     ),
     mainPanel(
-      tableOutput("table"),
-      plotOutput("plot"),
-      plotOutput("plot2")
+        tabsetPanel(
+                      tabPanel(title = "生存曲线",
+                               plotOutput("plot")
+                               ),
+                      tabPanel(title = "累积风险曲线",
+                               plotOutput("plot2")
+                      ),
+                      tabPanel(title = "建模细节", 
+                               tableOutput("table")
+                               )
     )
   )
 )
