@@ -67,8 +67,7 @@ server <- function(input, output, session) {
                     break.x.by = 100 # 设置x轴刻度间距
                     )
     })
-  })
-  output$plot2 <- renderPlot({
+    output$plot2 <- renderPlot({
     ggsurvplot(sur_fit(), data = data(), 
            conf.int = TRUE, # 增加置信区间
            fun = "cumhaz", # 绘制累计风险曲线
@@ -88,6 +87,8 @@ server <- function(input, output, session) {
 
 
   })
+  })
+  
 }
 
 # 运行应用
