@@ -50,10 +50,16 @@ magic_table_process <- function(df,magicnum,magicwords){
   if (magicnum == TRUE){
     df <- df
   } else {
-    df <- df %>%
-      mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
-                            "1", "2")) %>% 
-      mutate(group = as.numeric(group))
+  #tidyverse 实现
+   # df <- df %>%
+    #  mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+     #                       "1", "2")) %>% 
+      #mutate(group = as.numeric(group))
+  # base-r 实现
+    df <- within(df, {
+      group <- ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+                                             "1", "2")
+    })
   }
 }
 # 如果不是分类变量，则需要修改magicformula
