@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install dependencies from cran
-      run: install2.r --error rsconnect shinyWidgets shinythemes readxl fs dplyr tidyr stringr BH jpeg anytime survminer survival KMsurv MatrixModels RcppEigen SparseM abind car carData corrplot cowplot exactRankTes
+      run: install2.r --error rsconnect shinyWidgets shinythemes readxl fs dplyr tidyr stringr BH jpeg anytime survminer survival KMsurv MatrixModels RcppEigen SparseM abind car carData corrplot cowplot 
 
     - name: Install dependencies from github
       run: installGithub.r cran/exactRankTests       
