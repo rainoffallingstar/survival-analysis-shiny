@@ -46,18 +46,14 @@ magic_word_classification <- function(magicnum){
 }
 
 # 如果不是分类变量，则需要新建一个组别使其可分类
-magic_table_process <- function(magicnum,magicwords,df){
+magic_table_process <- function(df,magicnum,magicwords){
   if (magicnum == TRUE){
     df <- df
   } else {
-    High_level_group <- df %>%  
-      filter(magicwords >= median(magicwords) ) %>% 
-      mutate(group = 2)
-    low_level_group <- df  %>%  
-      filter(magicwords < median(magicwords) | is.na(magicwords)) %>% 
-      mutate(group = 1)
-    newdf <- rbind(High_level_group,low_level_group) #%>% 
-      #within({group = factor(group,levels = c(2,1),labels = c("high-level","low-level"))})
+    df <- df %>%
+      mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+                            "1", "2")) %>% 
+      mutate(group = as.numeric(group))
   }
 }
 # 如果不是分类变量，则需要修改magicformula
@@ -131,14 +127,33 @@ server <- function(input, output, session) {
   })
   
   data <- reactive({
-    newdata <- magic_classify() %>% 
-      magic_table_process(de_magic_power(input$magicformula),initial_data())
+    newdata <- initial_data() %>% 
+      magic_table_process(magic_classify(),de_magic_power(input$magicformula))
   })
   
+  #因为目前算法上有bug,所以在连续变量无法转换成功时，使用总的生存图
   
+  magic_assessment_again <- reactive({
+    if (magic_classify() == TRUE){
+      magic_assessment_again = TRUE
+    } else if (
+      data() %>% na.omit() %>% select(group) %>% 
+      unlist()  %>% factor() %>% levels() %>% length() %>% 
+      magic_word_classification() == TRUE){
+      magic_assessment_again = TRUE
+    } else {
+      magic_assessment_again = FALSE
+    }
+    
+  })
   dfs_transed <- reactive({
-    new_magicformula <- magic_classify() %>% 
-      maigcformula_assesment(input$magicformula)
+    if (magic_assessment_again() == TRUE){
+      new_magicformula <- magic_classify() %>% 
+        maigcformula_assesment(input$magicformula)
+    }else {
+      new_magicformula <- "Surv(time, status) ~ 1"
+    }
+    
   })
   sur_fit <- reactive({
     #dfs <- input$magicformula
@@ -146,7 +161,8 @@ server <- function(input, output, session) {
      formula = dfs_transform(dfs_transed()), data = data())
   })
   output$warn <- renderText({
-    real_world_warning(input$magicformula,names(initial_data()))
+    paste(real_world_warning(input$magicformula,names(initial_data())),
+          "your magic variable is",magic_assessment_again())
   })
   output$about <- renderText({
     print(paste("This application is under developed by Yanhua Zheng,Dr.Qinchuan Yu and Prof.Xiaoxue Wang from the department of hematology,CMU1H, and originally inspired by Dr.Zhenghua Liu. "))
@@ -158,36 +174,60 @@ server <- function(input, output, session) {
       fit
     })
     
+   
+  
+    
     output$plot <- renderPlot({
-     
       fit <- sur_fit()
-      ggsurvplot(fit, data = data(), 
-                 risk.table = TRUE,
-                 surv.median.line = "hv",# 增加中位生存时间
-                 conf.int = TRUE ,# 增加置信区间
-                 pval = TRUE, # 添加P值
-                 add.all = TRUE , # 添加总患者生存曲线
-                 palette = input$palettes,  # 自定义调色板
-                 xlab = "Follow up time(d)", # 指定x轴标签
-                 ylab = "Survival probability",# 指定x轴标签
-                 break.x.by = 100 # 设置x轴刻度间距
-      )
+      if (magic_assessment_again() == TRUE){
+        ggsurvplot(fit, data = data(), 
+                   risk.table = TRUE,
+                   surv.median.line = "hv",# 增加中位生存时间
+                   conf.int = TRUE ,# 增加置信区间
+                   pval = TRUE, # 添加P值
+                   add.all = TRUE , # 添加总患者生存曲线
+                   palette = input$palettes,  # 自定义调色板
+                   xlab = "Follow up time(d)", # 指定x轴标签
+                   ylab = "Survival probability",# 指定x轴标签
+                   break.x.by = 100 # 设置x轴刻度间距
+        )
+      }else {
+        ggsurvplot(fit, 
+                   palette = input$palettes,  # 自定义调色板
+                   xlab = "Follow up time(d)", # 指定x轴标签
+                   ylab = "Survival probability",# 指定x轴标签
+                   break.x.by = 100 # 设置x轴刻度间距
+        )
+      }
+      
     })
     output$plot2 <- renderPlot({
       
       fit <- sur_fit()
-      ggsurvplot(fit, data = data(), 
-                 conf.int = TRUE, # 增加置信区间
-                 fun = "cumhaz", # 绘制累计风险曲线
-                 cumevents = TRUE,
-                 #surv.median.line = "hv",# 增加中位生存时间
-                 pval = TRUE, # 添加P值
-                 add.all = TRUE , # 添加总患者生存曲线
-                 palette = input$palettes,  # 自定义调色板
-                 xlab = "Follow up time(d)", # 指定x轴标签
-                 ylab = "Survival probability",# 指定x轴标签
-                 break.x.by = 100# 设置x轴刻度间距
-      )
+      if (magic_assessment_again() == TRUE){
+        ggsurvplot(fit, data = data(), 
+                   conf.int = TRUE, # 增加置信区间
+                   fun = "cumhaz", # 绘制累计风险曲线
+                   cumevents = TRUE,
+                   #surv.median.line = "hv",# 增加中位生存时间
+                   pval = TRUE, # 添加P值
+                   add.all = TRUE , # 添加总患者生存曲线
+                   palette = input$palettes,  # 自定义调色板
+                   xlab = "Follow up time(d)", # 指定x轴标签
+                   ylab = "Survival probability",# 指定x轴标签
+                   break.x.by = 100# 设置x轴刻度间距
+        )
+      }else {
+        ggsurvplot(fit, 
+                   fun = "cumhaz", # 绘制累计风险曲线
+                   palette = input$palettes,  # 自定义调色板
+                   xlab = "Follow up time(d)", # 指定x轴标签
+                   ylab = "Survival probability",# 指定x轴标签
+                   break.x.by = 100 # 设置x轴刻度间距
+        )
+      }
+      
+      
     })
   })
   
