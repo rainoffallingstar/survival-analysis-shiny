@@ -16,8 +16,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Install dependencies
+    - name: Install dependencies from cran
       run: install2.r --error rsconnect shinyWidgets shinythemes readxl fs dplyr tidyr stringr BH jpeg anytime survminer survival KMsurv MatrixModels RcppEigen SparseM abind car carData corrplot cowplot exactRankTes
+
+    - name: Install dependencies from github
+      run: installGithub.r cran/exactRankTests       
 
     - name: Deploy to RStudio Connect
       run: |
