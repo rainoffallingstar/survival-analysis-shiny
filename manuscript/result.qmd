@@ -1,0 +1,131 @@
+---
+title: "Survival analysis Utils"
+author: "Yanhua Zheng"
+format: docx
+editor: visual
+---
+
+## method
+
+本文稿所应用的生存分析方法由survival包完成，主要在于进行生存曲线和风险累积曲线的测绘。以下是方法和步骤：
+
+1.  R包加载及自定义函数
+
+```{r}
+library(survminer) 
+library(survival) 
+library(dplyr)
+
+# 强制加载excel所有列均为numeric
+force_numeric_excel <- function(path){
+  if (is.null(path)){
+    col_types <- rep("numeric", ncol(read_excel("lung.xlsx", n_max = 3)))
+    initial_data <- read_excel("lung.xlsx",col_types = col_types) 
+  } else {
+    col_types <- rep("numeric", ncol(read_excel(path, n_max = 3)))
+    initial_data <- read_excel(path,col_types = col_types) 
+  }
+}
+
+
+```
+
+2.  加载数据集或excel文件
+
+```{r}
+data <- force_numeric_excel("data.xlxs")
+#如果使用默认数据，使用
+# data <- force_numeric_excel()
+```
+
+3.  构建生存对象，并将连续变量转换为分类变量
+
+    ```{r}
+    # 构建生存-时间对象
+    surobj <- Surv(time,status)
+    # 判断变量是否为分类变量的函数
+    magic_word_classification <- function(magicnum){
+      
+      if (magicnum == 2){
+        class_magic <- TRUE
+      }else{
+        class_magic <- FALSE
+        
+      }
+    }
+    # 对非分类变量的表格进行处理
+    magic_table_process <- function(df,magicnum,magicwords){
+      if (magicnum == TRUE){
+        df <- df
+      } else {
+      #tidyverse 实现
+       # df <- df %>%
+        #  mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+         #                       "1", "2")) %>% 
+          #mutate(group = as.numeric(group))
+      # base-r 实现
+        df <- within(df, {
+          group <- ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+                                                 "1", "2")
+        })
+      }
+    }
+    #构建生存fit
+    data_sur_construction <- function(x,df){
+      pd_if <- df %>% na.omit() %>% select(x) %>% 
+          unlist()  %>% factor() %>% levels() %>% length() %>% 
+          magic_word_classification()
+      newdata <- df %>% 
+          magic_table_process(pd_if,x)
+    }
+    sur_construction <- function(x,df){
+      pd_if <- df %>% na.omit() %>% select(x) %>% 
+          unlist()  %>% factor() %>% levels() %>% length() %>% 
+          magic_word_classification()
+      newdata <- df %>% 
+          magic_table_process(pd_if,x)
+     
+     if (pd_if == TRUE){
+        fit <- surv_fit(
+         surobj ~ x, data = newdata)
+      }else {
+        fit <- surv_fit(
+         surobj ~ group, data = newdata)
+      }
+    }
+    data <- data_sur_construction(x,data)
+    fit <- sur_construction(x,data)
+    ```
+
+4.  画出生存曲线图
+
+    ```{r}
+     ggsurvplot(fit, data = data, 
+                       risk.table = TRUE,
+                       surv.median.line = "hv",# 增加中位生存时间
+                       conf.int = TRUE ,# 增加置信区间
+                       pval = TRUE, # 添加P值
+                       add.all = TRUE , # 添加总患者生存曲线
+                       palette = input$palettes,  # 自定义调色板
+                       xlab = "Follow up time(d)", # 指定x轴标签
+                       ylab = "Survival probability",# 指定x轴标签
+                       break.x.by = 100 # 设置x轴刻度间距
+            )
+    ```
+
+5.  画出风险累积图
+
+    ```{r}
+     ggsurvplot(fit, data = data, 
+                       conf.int = TRUE, # 增加置信区间
+                       fun = "cumhaz", # 绘制累计风险曲线
+                       cumevents = TRUE,
+                       #surv.median.line = "hv",# 增加中位生存时间
+                       pval = TRUE, # 添加P值
+                       add.all = TRUE , # 添加总患者生存曲线
+                       palette = input$palettes,  # 自定义调色板
+                       xlab = "Follow up time(d)", # 指定x轴标签
+                       ylab = "Survival probability",# 指定x轴标签
+                       break.x.by = 100# 设置x轴刻度间距
+            )
+    ```
