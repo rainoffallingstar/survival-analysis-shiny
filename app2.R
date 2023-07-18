@@ -50,15 +50,15 @@ magic_table_process <- function(df,magicnum,magicwords){
   if (magicnum == TRUE){
     df <- df
   } else {
-  #tidyverse 实现
-   # df <- df %>%
+    #tidyverse 实现
+    # df <- df %>%
     #  mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
-     #                       "1", "2")) %>% 
-      #mutate(group = as.numeric(group))
-  # base-r 实现
+    #                       "1", "2")) %>% 
+    #mutate(group = as.numeric(group))
+    # base-r 实现
     df <- within(df, {
       group <- ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
-                                             "1", "2")
+                      "1", "2")
     })
   }
 }
@@ -129,12 +129,24 @@ server <- function(input, output, session) {
     initial_data() %>% na.omit() %>% select(de_magic_power(input$magicformula)) %>% 
       unlist()  %>% factor() %>% levels() %>% length() %>% 
       magic_word_classification()
-
+    
   })
   
   data <- reactive({
-    newdata <- initial_data() %>% 
-      magic_table_process(magic_classify(),de_magic_power(input$magicformula))
+    if (magic_classify() == TRUE){
+      df <- initial_data()
+    } else {
+      #tidyverse 实现
+      # df <- df %>%
+      #  mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
+      #                       "1", "2")) %>% 
+      #mutate(group = as.numeric(group))
+      # base-r 实现
+      df <- within(initial_data(), {
+        group <- ifelse(de_magic_power(input$magicformula) >= median(de_magic_power(input$magicformula), na.rm = TRUE), 
+                        "1", "2")
+      })
+    }
   })
   
   #因为目前算法上有bug,所以在连续变量无法转换成功时，使用总的生存图
@@ -164,14 +176,14 @@ server <- function(input, output, session) {
   sur_fit <- reactive({
     #dfs <- input$magicformula
     fit <- surv_fit(
-     formula = dfs_transform(dfs_transed()), data = data())
+      formula = dfs_transform(dfs_transed()), data = data())
   })
   output$warn <- renderText({
     paste(real_world_warning(input$magicformula,names(initial_data())),
           "your magic variable is",magic_assessment_again())
   })
   output$about <- renderText({
-    print(paste("This application is under developed by Yanhua Zheng and Dr.Qinchuan Yu from the department of hematological bioinformatic special interest group(HBSig),Gmade Studio, and originally inspired by Dr.Zhenghua Liu. "))
+    print(paste("This application is under developed by Yanhua Zheng,Dr.Qinchuan Yu and Prof.Xiaoxue Wang from the department of hematology,CMU1H, and originally inspired by Dr.Zhenghua Liu. "))
   })
   
   observeEvent(input$go, {
@@ -180,8 +192,8 @@ server <- function(input, output, session) {
       fit
     })
     
-   
-  
+    
+    
     
     output$plot <- renderPlot({
       fit <- sur_fit()
