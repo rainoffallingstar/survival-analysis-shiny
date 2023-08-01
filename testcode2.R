@@ -6,7 +6,8 @@ data(package="survival")  #查看内置数据集
 lung # 加载lung数据集
 str(lung)
 #2. 拟合生存曲线
-fit <- surv_fit(Surv(time, status) ~ group,  data = totla)
+totla <- read_excel("data/lung.xlsx")
+fit2 <- surv_fit(Surv(time, status) ~ sex,  data = totla)
 
 fit
 #结果

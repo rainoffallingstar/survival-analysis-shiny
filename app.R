@@ -75,12 +75,14 @@ maigcformula_assesment <- function(magicwords,magicformula){
 
 force_numeric_excel <- function(path){
   if (is.null(path)){
-    col_types <- rep("numeric", ncol(read_excel("data/lung.xlsx", n_max = 3)))
-    initial_data <- read_excel("data/lung.xlsx",col_types = col_types) 
+    paths <- "data/lung.xlsx"
   } else {
-    col_types <- rep("numeric", ncol(read_excel(path, n_max = 3)))
-    initial_data <- read_excel(path,col_types = col_types) 
+    paths <- path
   }
+  #col_types <- rep("numeric", ncol(read_excel(paths, n_max = 3)))
+  initial_data <- read_excel(paths #,col_types = col_types
+                             )
+  return(initial_data)
 }
 
 # TO-DOS
@@ -121,8 +123,7 @@ ui <- fluidPage(
 # 定义服务器逻辑
 server <- function(input, output, session) {
   initial_data <- reactive({
-    req(input$file)
-    initial_data <- force_numeric_excel(input$file$path)
+    initial_data <- force_numeric_excel(input$file$datapath)
   })
   
   magic_classify <- reactive({
@@ -188,21 +189,21 @@ server <- function(input, output, session) {
       if (magic_assessment_again() == TRUE){
         ggsurvplot(fit, data = data(), 
                    risk.table = TRUE,
-                   surv.median.line = "hv",# 增加中位生存时间
+                   #surv.median.line = "hv",# 增加中位生存时间
                    conf.int = TRUE ,# 增加置信区间
                    pval = TRUE, # 添加P值
-                   add.all = TRUE , # 添加总患者生存曲线
+                   #add.all = TRUE , # 添加总患者生存曲线
                    palette = input$palettes,  # 自定义调色板
                    xlab = "Follow up time(d)", # 指定x轴标签
-                   ylab = "Survival probability",# 指定x轴标签
-                   break.x.by = 100 # 设置x轴刻度间距
+                   ylab = "Survival probability" # 指定x轴标签
+                   #break.x.by = 100 # 设置x轴刻度间距
         )
       }else {
         ggsurvplot(fit, 
                    palette = input$palettes,  # 自定义调色板
                    xlab = "Follow up time(d)", # 指定x轴标签
-                   ylab = "Survival probability",# 指定x轴标签
-                   break.x.by = 100 # 设置x轴刻度间距
+                   ylab = "Survival probability" # 指定x轴标签
+                   #break.x.by = 100 # 设置x轴刻度间距
         )
       }
       
@@ -217,19 +218,19 @@ server <- function(input, output, session) {
                    cumevents = TRUE,
                    #surv.median.line = "hv",# 增加中位生存时间
                    pval = TRUE, # 添加P值
-                   add.all = TRUE , # 添加总患者生存曲线
+                   #add.all = TRUE , # 添加总患者生存曲线
                    palette = input$palettes,  # 自定义调色板
                    xlab = "Follow up time(d)", # 指定x轴标签
-                   ylab = "Survival probability",# 指定x轴标签
-                   break.x.by = 100# 设置x轴刻度间距
+                   ylab = "Survival probability" # 指定x轴标签
+                   #break.x.by = 100# 设置x轴刻度间距
         )
       }else {
         ggsurvplot(fit, 
                    fun = "cumhaz", # 绘制累计风险曲线
                    palette = input$palettes,  # 自定义调色板
                    xlab = "Follow up time(d)", # 指定x轴标签
-                   ylab = "Survival probability",# 指定x轴标签
-                   break.x.by = 100 # 设置x轴刻度间距
+                   ylab = "Survival probability" # 指定x轴标签
+                   #break.x.by = 100 # 设置x轴刻度间距
         )
       }
       
