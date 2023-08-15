@@ -1,5 +1,7 @@
 # survival analysis shiny
 
+[![DOI](https://zenodo.org/badge/666938165.svg)](https://zenodo.org/badge/latestdoi/666938165)
+
 #### 介绍
 survival analysis shiny
 
