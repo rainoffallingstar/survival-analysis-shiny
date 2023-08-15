@@ -172,7 +172,7 @@ server <- function(input, output, session) {
           "your magic variable is",magic_assessment_again())
   })
   output$about <- renderText({
-    print(paste("This application is under developed by Yanhua Zheng and Dr.Qinchuan Yu from the department of hematological bioinformatic special interest group(HBSig),Gmade Studio, and originally inspired by Dr.Zhenghua Liu. "))
+    print(paste("This application is under developed by Yanhua Zheng and Dr.Qinchuan Yu from the department of hematological bioinformatic special interest group(HBSig),Gmade Studio, and originally inspired by Dr.Zhenghua Liu. If you use our aplication in your research,please cite us as the following: Yanhua Zheng. (2023). rainoffallingstar/survival-analysis-shiny: release (v1.0). Zenodo. https://doi.org/10.5281/zenodo.8248064"))
   })
   
   observeEvent(input$go, {
