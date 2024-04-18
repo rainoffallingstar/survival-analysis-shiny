@@ -6,6 +6,8 @@ library(survminer)
 library(stringr)
 library(dplyr)
 library(tidyr)
+library(DT)
+library(mellon)
 # 定义需要用到的各种参数
 # 调色盘的选项预加载
 palette_list <- c("grey","npg","aaas","lancet","jco", 
@@ -16,7 +18,9 @@ dfs_transform <- function(x){
 }
 # 提取magicformula的最后一个变量进行处理
 de_magic_power <- function(magicformula){
-  str_split(magicformula,"~")[[1]][2] %>% str_trim()
+  word <- stringr::str_split(magicformula,"~")[[1]][2] %>% 
+    stringr::str_trim()
+  return(word)
 }
 # 对不存在于本魔法世界的magicword进行警告，简单说就是对不在于表格内的变量进行警告
 real_world_warning <- function(magicformula,magicwords){
@@ -25,23 +29,20 @@ real_world_warning <- function(magicformula,magicwords){
   }else {
     real_world_warning <- "Your prompt words does not work!"
   }
-  
 }
 # 对magicformla的最后一个变量进行识别是否是分类变量
-
 # 计算levels先
-
 levels_num <- function(magicwords,df){
-  df %>% na.omit() %>% select(all_of(magicwords)) %>% unlist()  %>% factor() %>% levels() %>% length()
+  df[[magicwords]] %>% 
+    unlist()  %>% 
+    factor() %>% levels() %>% length()
 }
 
 magic_word_classification <- function(magicnum){
-  
   if (magicnum == 2){
     class_magic <- TRUE
   }else{
     class_magic <- FALSE
-    
   }
 }
 
@@ -50,17 +51,15 @@ magic_table_process <- function(df,magicnum,magicwords){
   if (magicnum == TRUE){
     df <- df
   } else {
-  #tidyverse 实现
-   # df <- df %>%
-    #  mutate(group = ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
-     #                       "1", "2")) %>% 
-      #mutate(group = as.numeric(group))
-  # base-r 实现
-    df <- within(df, {
-      group <- ifelse(magicwords >= median(magicwords, na.rm = TRUE), 
-                                             "1", "2")
-    })
+   df <- df %>%
+     dplyr::filter(.[[magicwords]] != "NA") %>% 
+     dplyr::filter(!is.na(.[[magicwords]])) %>% 
+      dplyr::mutate(group = case_when(
+        as.numeric(.[[magicwords]]) >= median(as.numeric(.[[magicwords]]), na.rm = TRUE) ~ "highlevel", 
+        as.numeric(.[[magicwords]]) < median(as.numeric(.[[magicwords]]), na.rm = TRUE) ~ "lowlevel"))
+   df$group <- factor(df$group,levels = c("highlevel","lowlevel"))
   }
+  return(df)
 }
 # 如果不是分类变量，则需要修改magicformula
 maigcformula_assesment <- function(magicwords,magicformula){
@@ -75,13 +74,12 @@ maigcformula_assesment <- function(magicwords,magicformula){
 
 force_numeric_excel <- function(path){
   if (is.null(path)){
-    paths <- "data/lung.xlsx"
+    initial_data <- mellon::lung
   } else {
     paths <- path
-  }
-  #col_types <- rep("numeric", ncol(read_excel(paths, n_max = 3)))
-  initial_data <- read_excel(paths #,col_types = col_types
+    initial_data <- readxl::read_excel(paths #,col_types = col_types
                              )
+  }
   return(initial_data)
 }
 
@@ -109,6 +107,9 @@ ui <- fluidPage(
         tabPanel(title = "累积风险曲线",
                  plotOutput("plot2")
         ),
+        tabPanel(title = "数据查看", 
+                  DT::DTOutput("datasetview")
+        ),
         tabPanel(title = "建模细节", 
                  verbatimTextOutput("table")
         ),
@@ -127,10 +128,13 @@ server <- function(input, output, session) {
   })
   
   magic_classify <- reactive({
-    initial_data() %>% na.omit() %>% select(de_magic_power(input$magicformula)) %>% 
-      unlist()  %>% factor() %>% levels() %>% length() %>% 
+    data <- initial_data()
+    check <- data[[de_magic_power(input$magicformula)]] %>% 
+      unlist()  %>% 
+      factor() %>% 
+      levels() %>% 
+      length() %>% 
       magic_word_classification()
-
   })
   
   data <- reactive({
@@ -138,20 +142,20 @@ server <- function(input, output, session) {
       magic_table_process(magic_classify(),de_magic_power(input$magicformula))
   })
   
+  output$datasetview <- DT::renderDT({
+      data()
+    })
+
   #因为目前算法上有bug,所以在连续变量无法转换成功时，使用总的生存图
-  
   magic_assessment_again <- reactive({
+    data <- data()
     if (magic_classify() == TRUE){
       magic_assessment_again = TRUE
-    } else if (
-      data() %>% na.omit() %>% select(group) %>% 
-      unlist()  %>% factor() %>% levels() %>% length() %>% 
-      magic_word_classification() == TRUE){
+    } else if (length(levels(data$group)) == 2){
       magic_assessment_again = TRUE
     } else {
       magic_assessment_again = FALSE
     }
-    
   })
   dfs_transed <- reactive({
     if (magic_assessment_again() == TRUE){
@@ -160,7 +164,6 @@ server <- function(input, output, session) {
     }else {
       new_magicformula <- "Surv(time, status) ~ 1"
     }
-    
   })
   sur_fit <- reactive({
     #dfs <- input$magicformula
@@ -180,10 +183,6 @@ server <- function(input, output, session) {
       fit <- sur_fit()
       fit
     })
-    
-   
-  
-    
     output$plot <- renderPlot({
       fit <- sur_fit()
       if (magic_assessment_again() == TRUE){
