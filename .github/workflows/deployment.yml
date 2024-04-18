@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install dependencies from cran
-      run: install2.r --error rsconnect shinyWidgets shinythemes readxl fs dplyr tidyr stringr BH jpeg anytime survminer survival KMsurv MatrixModels RcppEigen SparseM abind car carData corrplot cowplot exactRankTests knitr DT devtools
+      run: install2.r --error pak rsconnect readxl dplyr tidyr stringr BH jpeg anytime survminer survival KMsurv knitr DT
 
     - name: make manuscript
       run: Rscript -e "library(knitr); knit('manuscript/result.qmd')"
@@ -34,7 +34,7 @@ jobs:
 
     - name: Deploy to RStudio Connect
       run: |
-        devtools::install_github("rainoffallingstar/mellon")
+        pak::pak("rainoffallingstar/mellon",upgrade = TRUE,ask= FALSE, dependencies = NA)
         library(rsconnect)
         rsconnect::setAccountInfo(name="${{ secrets.RSCONNECT_ACCOUNT }}", 
                                   token="${{ secrets.RSCONNECT_TOKEN }}", 
