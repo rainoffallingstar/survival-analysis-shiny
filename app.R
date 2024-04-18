@@ -141,11 +141,7 @@ server <- function(input, output, session) {
     newdata <- initial_data() %>% 
       magic_table_process(magic_classify(),de_magic_power(input$magicformula))
   })
-  
-  output$datasetview <- DT::renderDT({
-      data()
-    })
-
+ 
   #因为目前算法上有bug,所以在连续变量无法转换成功时，使用总的生存图
   magic_assessment_again <- reactive({
     data <- data()
@@ -157,6 +153,15 @@ server <- function(input, output, session) {
       magic_assessment_again = FALSE
     }
   })
+   
+  output$datasetview <- DT::renderDT({
+    if (!magic_assessment_again()){
+       initial_data()
+    }else{
+      data()
+    } 
+    })
+
   dfs_transed <- reactive({
     if (magic_assessment_again() == TRUE){
       new_magicformula <- magic_classify() %>% 
